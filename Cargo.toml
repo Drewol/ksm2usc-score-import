@@ -1,0 +1,20 @@
+[package]
+name = "ksm2usc-score-import"
+version = "0.1.0"
+authors = ["Drewol <emildraws@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+iced = {version = "0.3.0", features = ["async-std"] }
+iced_native = "0.4.0"
+iced_futures = "0.3.0"
+rfd = "0.3.0"
+rusqlite = { version = "0.25.1", features = ["bundled"] }
+walkdir = "2.3.2"
+sha1 = "0.6.0"
+anyhow = "1.0.40"
+async-std = "1.9.0"
+msgbox = "0.6"
+lazy_static = "1.4.0"
