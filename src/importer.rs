@@ -10,13 +10,16 @@ use std::str::FromStr;
 use walkdir::DirEntry;
 
 pub fn import(ksm_path: &PathBuf, db_path: &PathBuf) -> Result<iced::Subscription<Progress>> {
-    ensure!(ksm_path.exists(), "KSM path invalid: {:?}", ksm_path);
-    ensure!(db_path.exists(), "maps.db path invalid: {:?}", db_path);
-
     Ok(iced::Subscription::from_recipe(Importer {
         db_path: db_path.clone(),
         ksm_path: ksm_path.clone(),
     }))
+}
+
+pub fn validate_paths(ksm_path: &PathBuf, db_path: &PathBuf) -> Result<()> {
+    ensure!(ksm_path.exists(), "KSM path invalid: {:?}", ksm_path);
+    ensure!(db_path.exists(), "maps.db path invalid: {:?}", db_path);
+    Ok(())
 }
 
 pub struct KsmScore {

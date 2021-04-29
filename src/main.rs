@@ -83,12 +83,12 @@ impl Application for State {
                 match importer::import(ksm_path, db_path) {
                     Ok(s) => s.map(|p| Message::Progress(p)),
                     Err(e) => {
-                        msgbox::create(
-                            "Failed to start import",
-                            &format!("{:?}", e),
-                            msgbox::IconType::Error,
-                        )
-                        .unwrap_or_default();
+                        rfd::MessageDialog::new()
+                            .set_title("Failed to start import")
+                            .set_description(&format!("{:?}", e))
+                            .set_level(rfd::MessageLevel::Error)
+                            .set_buttons(rfd::MessageButtons::Ok)
+                            .show();
                         Subscription::none()
                     }
                 }
@@ -117,9 +117,18 @@ impl Application for State {
                     .pick_file()
             }
             Message::Start => match (&self.db_path, &self.ksm_path) {
-                (Some(_), Some(_)) => {
-                    self.progress = Some(importer::Progress::Started);
-                }
+                (Some(db), Some(ksm)) => match importer::validate_paths(ksm, db) {
+                    Ok(_) => self.progress = Some(importer::Progress::Started),
+                    Err(e) => {
+                        rfd::MessageDialog::new()
+                            .set_title("Failed to start import")
+                            .set_description(&format!("{:?}", e))
+                            .set_level(rfd::MessageLevel::Error)
+                            .set_buttons(rfd::MessageButtons::Ok)
+                            .show();
+                    }
+                },
+
                 _ => {}
             },
             Message::BackButton => self.progress = None,
