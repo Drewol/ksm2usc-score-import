@@ -195,7 +195,10 @@ async fn run_importer(state: State) -> Option<(Progress, State)> {
 
             let progress = 1.0 - (score_files.len() as f32 / summary.scores_found as f32);
             Some((
-                Progress::Advanced(progress),
+                Progress::Advanced(
+                    progress,
+                    current_file_path.to_str().unwrap_or_default().to_string(),
+                ),
                 State::Importing {
                     db_version,
                     score_files,
@@ -253,7 +256,7 @@ enum State {
 #[derive(Debug, Clone)]
 pub enum Progress {
     Started,
-    Advanced(f32),
+    Advanced(f32, String),
     Finished(Summary),
     Errored(String),
 }

@@ -4,7 +4,7 @@ use iced::{
     Subscription, Text,
 };
 use importer::Progress;
-use std::{borrow::BorrowMut, path::PathBuf};
+use std::path::PathBuf;
 
 mod importer;
 mod importer_funcs;
@@ -103,7 +103,13 @@ impl Application for State {
         _clipboard: &mut iced::Clipboard,
     ) -> iced::Command<Self::Message> {
         match message {
-            Message::Progress(p) => self.progress = Some(p),
+            Message::Progress(p) => match p {
+                Progress::Finished(s) => {
+                    self.progress = None;
+                    self.summary = Some(s)
+                }
+                _ => self.progress = Some(p),
+            },
             Message::KsmButton => self.ksm_path = rfd::FileDialog::new().pick_folder(),
             Message::DbButton => {
                 self.db_path = rfd::FileDialog::new()
@@ -118,15 +124,6 @@ impl Application for State {
             },
             Message::BackButton => self.progress = None,
         };
-
-        if let importer::Progress::Finished(summary) = self
-            .progress
-            .borrow_mut()
-            .as_mut()
-            .unwrap_or(&mut Progress::Started)
-        {
-            self.summary = Some(std::mem::replace(summary, Summary::default()))
-        }
 
         Command::none()
     }
@@ -211,13 +208,14 @@ impl Application for State {
             Stage::Importing => Column::new()
                 .push(Text::new("Importing"))
                 .push(match self.progress.as_ref().unwrap() {
-                    importer::Progress::Advanced(a) => {
-                        Row::new().push(iced::ProgressBar::new(0.0_f32..=1.0_f32, *a))
+                    importer::Progress::Advanced(p, _score_file) => {
+                        Column::new().push(iced::ProgressBar::new(0.0_f32..=1.0_f32, *p))
                     }
-                    importer::Progress::Started => Row::new().push(Text::new("Starting")),
-                    importer::Progress::Finished(_) => Row::new().push(Text::new("Finished")),
+
+                    importer::Progress::Started => Column::new().push(Text::new("Starting")),
+                    importer::Progress::Finished(_) => Column::new().push(Text::new("Finished")),
                     importer::Progress::Errored(e) => {
-                        Row::new().push(Text::new(&format!("Error: {}", e)))
+                        Column::new().push(Text::new(&format!("Error: {}", e)))
                     }
                 })
                 .push(match self.progress.as_ref().unwrap() {
