@@ -1,22 +1,22 @@
-use crate::Summary;
+use crate::{importer_funcs::ImportFn, Summary};
 use anyhow::{ensure, Result};
 use iced_futures::futures;
 use rusqlite::Connection;
-use std::cell::RefCell;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
+use std::{cell::RefCell, path::Path};
 use walkdir::DirEntry;
 
-pub fn import(ksm_path: &PathBuf, db_path: &PathBuf) -> Result<iced::Subscription<Progress>> {
+pub fn import(ksm_path: &Path, db_path: &Path) -> Result<iced::Subscription<Progress>> {
     Ok(iced::Subscription::from_recipe(Importer {
-        db_path: db_path.clone(),
-        ksm_path: ksm_path.clone(),
+        db_path: db_path.to_path_buf(),
+        ksm_path: ksm_path.to_path_buf(),
     }))
 }
 
-pub fn validate_paths(ksm_path: &PathBuf, db_path: &PathBuf) -> Result<()> {
+pub fn validate_paths(ksm_path: &Path, db_path: &Path) -> Result<()> {
     ensure!(ksm_path.exists(), "KSM path invalid: {:?}", ksm_path);
     ensure!(db_path.exists(), "maps.db path invalid: {:?}", db_path);
     Ok(())
@@ -43,10 +43,10 @@ impl FromStr for KsmScore {
         );
 
         let (settings, stats): (Vec<&str>, Vec<&str>) = {
-            let mut parts = score_line.split("=");
+            let mut parts = score_line.split('=');
             (
-                parts.next().unwrap().split(",").collect(),
-                parts.next().unwrap().split(",").collect(),
+                parts.next().unwrap().split(',').collect(),
+                parts.next().unwrap().split(',').collect(),
             )
         };
         let hard = settings[0] == "hard";
@@ -66,8 +66,8 @@ impl FromStr for KsmScore {
     }
 }
 
-fn enumerate_ksm_score_files(ksm_path: &PathBuf) -> Result<Vec<DirEntry>> {
-    let mut score_paths = ksm_path.clone();
+fn enumerate_ksm_score_files(ksm_path: &Path) -> Result<Vec<DirEntry>> {
+    let mut score_paths = ksm_path.to_path_buf();
     score_paths.push("score");
     ensure!(
         score_paths.exists(),
@@ -91,7 +91,7 @@ fn enumerate_ksm_score_files(ksm_path: &PathBuf) -> Result<Vec<DirEntry>> {
                 .to_ascii_lowercase()
                 .eq(&"ksc".to_string())
         })
-        .map(|d| d.unwrap().clone())
+        .map(|d| d.unwrap())
         .collect())
 }
 
@@ -142,11 +142,10 @@ async fn run_importer(state: State) -> Option<(Progress, State)> {
                 return Some((Progress::Finished(summary), State::Finished));
             }
 
-            let insert_func: Option<fn(&KsmScore, &Connection, &PathBuf) -> Result<()>> =
-                match db_version {
-                    19 => Some(crate::importer_funcs::version_19),
-                    _ => None,
-                };
+            let insert_func: Option<ImportFn> = match db_version {
+                19 => Some(crate::importer_funcs::version_19),
+                _ => None,
+            };
             if insert_func.is_none() {
                 return Some((
                     Progress::Errored(format!("Unsupported DB version: {}", db_version)),

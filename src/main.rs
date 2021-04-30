@@ -55,7 +55,6 @@ fn main() -> Result<()> {
     };
     Ok(State::run(settings)?)
 }
-
 enum Stage {
     Paths,
     Importing,
@@ -81,7 +80,7 @@ impl Application for State {
         match (&self.ksm_path, &self.db_path, &self.progress) {
             (Some(ksm_path), Some(db_path), Some(_progress)) => {
                 match importer::import(ksm_path, db_path) {
-                    Ok(s) => s.map(|p| Message::Progress(p)),
+                    Ok(s) => s.map(Message::Progress),
                     Err(e) => {
                         rfd::MessageDialog::new()
                             .set_title("Failed to start import")
@@ -96,7 +95,6 @@ impl Application for State {
             _ => Subscription::none(),
         }
     }
-
     fn update(
         &mut self,
         message: Self::Message,
@@ -116,21 +114,21 @@ impl Application for State {
                     .add_filter("Database", &["db"])
                     .pick_file()
             }
-            Message::Start => match (&self.db_path, &self.ksm_path) {
-                (Some(db), Some(ksm)) => match importer::validate_paths(ksm, db) {
-                    Ok(_) => self.progress = Some(importer::Progress::Started),
-                    Err(e) => {
-                        rfd::MessageDialog::new()
-                            .set_title("Failed to start import")
-                            .set_description(&format!("{:?}", e))
-                            .set_level(rfd::MessageLevel::Error)
-                            .set_buttons(rfd::MessageButtons::Ok)
-                            .show();
+            Message::Start => {
+                if let (Some(db), Some(ksm)) = (&self.db_path, &self.ksm_path) {
+                    match importer::validate_paths(ksm, db) {
+                        Ok(_) => self.progress = Some(importer::Progress::Started),
+                        Err(e) => {
+                            rfd::MessageDialog::new()
+                                .set_title("Failed to start import")
+                                .set_description(&format!("{:?}", e))
+                                .set_level(rfd::MessageLevel::Error)
+                                .set_buttons(rfd::MessageButtons::Ok)
+                                .show();
+                        }
                     }
-                },
-
-                _ => {}
-            },
+                }
+            }
             Message::BackButton => self.progress = None,
         };
 

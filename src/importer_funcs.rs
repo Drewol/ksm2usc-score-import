@@ -7,11 +7,13 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     io::Read,
-    path::{Component, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 
-fn get_score_chart_path(score_path: &PathBuf) -> Result<PathBuf> {
+pub type ImportFn = fn(&KsmScore, &Connection, &Path) -> Result<()>;
+
+fn get_score_chart_path(score_path: &Path) -> Result<PathBuf> {
     let mut res = score_path.with_extension("ksh");
     let depth = res.components().count();
     res = res
@@ -42,7 +44,7 @@ lazy_static! {
         Arc::new(Mutex::new(HashMap::new()));
 }
 
-fn hash_file(path: &PathBuf) -> Result<String> {
+fn hash_file(path: &Path) -> Result<String> {
     let mut cache = HASH_CACHE.try_lock().unwrap();
 
     let key = path.to_str().unwrap_or_default().to_string();
@@ -61,7 +63,7 @@ fn hash_file(path: &PathBuf) -> Result<String> {
     Ok(res)
 }
 
-pub fn version_19(score: &KsmScore, db: &Connection, score_path: &PathBuf) -> Result<()> {
+pub fn version_19(score: &KsmScore, db: &Connection, score_path: &Path) -> Result<()> {
     let chart_path = get_score_chart_path(score_path)?;
     let lwt = std::fs::metadata(&score_path)?.modified()?;
     let lwt = lwt.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
