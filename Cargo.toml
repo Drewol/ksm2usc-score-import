@@ -11,7 +11,7 @@ iced = {version = "0.3.0", features = ["async-std"] }
 iced_native = "0.4.0"
 iced_futures = "0.3.0"
 rfd = "0.3.0"
-rusqlite = { version = "0.25.1", features = ["bundled"] }
+rusqlite = { version = "0.25.4", features = ["bundled"] }
 walkdir = "2.3.2"
 sha1 = "0.6.0"
 anyhow = "1.0.40"
